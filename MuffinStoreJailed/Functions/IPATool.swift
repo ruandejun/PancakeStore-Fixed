@@ -144,7 +144,10 @@ class StoreClient {
                 if let cleanData = plistSection.data(using: .utf8),
                    let plist = try PropertyListSerialization.propertyList(from: cleanData, options: [], format: nil) as? [String: Any],
                    let urlBag = plist["urlBag"] as? [String: Any],
-                   let endpoint = urlBag["authenticateAccount"] as? String {
+                   var endpoint = urlBag["authenticateAccount"] as? String {
+                    if !endpoint.hasSuffix("/") {
+                        endpoint += "/"
+                    }
                     print("bag: \(endpoint)")
                     return endpoint
                 }
