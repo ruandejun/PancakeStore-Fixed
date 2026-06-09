@@ -186,9 +186,12 @@ class StoreClient {
             ]
             
             var ret = false
+            var currentURL = url
+            var triedFast = false
             
             for attempt in 1...4 {
                 req["attempt"] = String(attempt)
+                request.url = currentURL
                 request.httpBody = try! JSONSerialization.data(withJSONObject: req, options: [])
                 let datatask = session.dataTask(with: request) { (data, response, error) in
                     if let error = error {
@@ -211,6 +214,20 @@ class StoreClient {
                         }
                     }
                     if let data = data {
+                        if data.isEmpty {
+                            print("Received empty data, will try fast/ endpoint")
+                            if !triedFast {
+                                var urlString = currentURL.absoluteString
+                                if urlString.hasSuffix("/") {
+                                    urlString = String(urlString.dropLast())
+                                }
+                                if let newURL = URL(string: urlString + "/fast/") {
+                                    currentURL = newURL
+                                    triedFast = true
+                                }
+                            }
+                            return
+                        }
                         do {
                             let resp = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as! [String: Any]
                             if let dsPersonId = resp["dsPersonId"] as? String, let passwordToken = resp["passwordToken"] as? String, !dsPersonId.isEmpty, !passwordToken.isEmpty {
@@ -241,6 +258,16 @@ class StoreClient {
                             }
                         } catch {
                             print("Error: \(error)")
+                            if !triedFast {
+                                var urlString = currentURL.absoluteString
+                                if urlString.hasSuffix("/") {
+                                    urlString = String(urlString.dropLast())
+                                }
+                                if let newURL = URL(string: urlString + "/fast/") {
+                                    currentURL = newURL
+                                    triedFast = true
+                                }
+                            }
                         }
                     }
                 }
