@@ -489,119 +489,40 @@ class IPATool {
 
 class EncryptedKeychainWrapper {
     static func generateAndStoreKey() -> Void {
-        self.deleteKey()
-        print("Generating key")
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecAttrKeySizeInBits as String: 256,
-            kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
-            kSecPrivateKeyAttrs as String: [
-                kSecAttrIsPermanent as String: true,
-                kSecAttrApplicationTag as String: "dev.mineek.muffinstorejailed.key",
-                kSecAttrAccessControl as String: SecAccessControlCreateWithFlags(
-                    kCFAllocatorDefault,
-                    kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                    [.privateKeyUsage, .biometryAny],
-                    nil
-                )!
-            ]
-        ]
-        var error: Unmanaged<CFError>?
-        guard let privateKey = SecKeyCreateRandomKey(query as CFDictionary, &error) else {
-            print("Failed to generate key!!")
-            return
-        }
-        print("Generated key!")
-        print("Getting public key")
-        let pubKey = SecKeyCopyPublicKey(privateKey)!
-        print("Got public key")
-        let pubKeyData = SecKeyCopyExternalRepresentation(pubKey, &error)! as Data
-        let pubKeyBase64 = pubKeyData.base64EncodedString()
-        print("Public key: \(pubKeyBase64)")
+        print("Secure Enclave key generation bypassed for compatibility")
     }
 
     static func deleteKey() -> Void {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: "dev.mineek.muffinstorejailed.key"
-        ]
-        SecItemDelete(query as CFDictionary)
+        print("Secure Enclave key deletion bypassed")
     }
 
     static func saveAuthInfo(base64: String) -> Void {
         let fm = FileManager.default
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: "dev.mineek.muffinstorejailed.key",
-            kSecReturnRef as String: true
-        ]
-        var keyRef: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &keyRef)
-        if status != errSecSuccess {
-            print("Failed to get key!")
-            return
-        }
-        print("Got key!")
-        let key = keyRef as! SecKey
-        print("Getting public key")
-        let pubKey = SecKeyCopyPublicKey(key)!
-        print("Got public key")
-        print("Encrypting data")
-        var error: Unmanaged<CFError>?
-        guard let encryptedData = SecKeyCreateEncryptedData(pubKey, .eciesEncryptionCofactorVariableIVX963SHA256AESGCM, base64.data(using: .utf8)! as CFData, &error) else {
-            print("Failed to encrypt data!")
-            return
-        }
-        print("Encrypted data")
         let path = fm.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("authinfo").path
-        fm.createFile(atPath: path, contents: encryptedData as Data, attributes: nil)
-        print("Saved encrypted auth info")
+        if let data = base64.data(using: .utf8) {
+            fm.createFile(atPath: path, contents: data, attributes: nil)
+            print("Saved auth info successfully")
+        }
     }
 
     static func loadAuthInfo() -> String? {
-        @ObservedObject var appData = AppData.shared
-        
         let fm = FileManager.default
         let path = fm.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("authinfo").path
         if !fm.fileExists(atPath: path) {
             return nil
         }
-        let data = fm.contents(atPath: path)!
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrApplicationTag as String: "dev.mineek.muffinstorejailed.key",
-            kSecReturnRef as String: true
-        ]
-        var keyRef: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &keyRef)
-        if status != errSecSuccess {
-            print("Failed to get key! Aborting login...")
-            DispatchQueue.main.async {
-                appData.appleId = ""
-                appData.password = ""
-                appData.hasSent2FACode = false
-                Alertinator.shared.alert(title: "Failed to login!", body: "Could not get the key. Please try again with a different Apple ID, preferrably one with 2FA enabled.")
-            }
-            return nil
+        if let data = fm.contents(atPath: path) {
+            return String(data: data, encoding: .utf8)
         }
-        print("Got key!")
-        let key = keyRef as! SecKey
-        let privKey = key
-        print("Decrypting data")
-        var error: Unmanaged<CFError>?
-        guard let decryptedData = SecKeyCreateDecryptedData(privKey, .eciesEncryptionCofactorVariableIVX963SHA256AESGCM, data as CFData, &error) else {
-            print("Failed to decrypt data!")
-            return nil
-        }
-        print("Decrypted data")
-        return String(data: decryptedData as Data, encoding: .utf8)
+        return nil
     }
 
     static func deleteAuthInfo() -> Void {
         let fm = FileManager.default
         let path = fm.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("authinfo").path
-        try! fm.removeItem(atPath: path)
+        if fm.fileExists(atPath: path) {
+            try? fm.removeItem(atPath: path)
+        }
     }
 
     static func hasAuthInfo() -> Bool {
