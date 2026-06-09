@@ -16,5 +16,5 @@ jobs:
      - name: Upload artifact
        uses: actions/upload-artifact@v4
        with:
-        name: MuffinStoreJailed
-        path: MuffinStoreJailed.ipa
+        name: PancakeStore
+        path: PancakeStore.ipa
