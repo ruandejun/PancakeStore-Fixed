@@ -168,12 +168,10 @@ struct ContentView: View {
                 }
             }
             
-            if appData.hasSent2FACode {
-                Section(header: HeaderLabel(text: "Verification Code", icon: "key")) {
-                    TextField("2FA Code", text: $appData.code)
-                        .modifier(TextFieldBackground())
-                        .keyboardType(.numberPad)
-                }
+            Section(header: HeaderLabel(text: "Verification Code (2FA)", icon: "key")) {
+                TextField("2FA Code", text: $appData.code)
+                    .modifier(TextFieldBackground())
+                    .keyboardType(.numberPad)
             }
         }
     }

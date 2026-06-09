@@ -40,7 +40,7 @@ struct NavigationButtons: View {
                         }
                     }
                 }) {
-                    if appData.hasSent2FACode {
+                    if appData.hasSent2FACode || !appData.code.isEmpty {
                         ButtonLabel(text: "Log In", icon: "arrow.right")
                     } else {
                         ButtonLabel(text: "Send 2FA Code", icon: "key")
@@ -48,7 +48,7 @@ struct NavigationButtons: View {
                 }
                 .buttonStyle(FancyButtonStyle())
                 .disabled(appData.appleId.isEmpty || appData.password.isEmpty)
-                .disabled(appData.hasSent2FACode ? appData.code.isEmpty : false)
+                .disabled((appData.hasSent2FACode || !appData.code.isEmpty) ? appData.code.isEmpty : false)
             } else {
                 if appData.isDowngrading {
                     Button(action: {
