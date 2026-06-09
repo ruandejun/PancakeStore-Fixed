@@ -188,11 +188,13 @@ class StoreClient {
             var ret = false
             var currentURL = url
             var triedFast = false
+            var gotEmptyResponse = false
             
             for attempt in 1...4 {
                 req["attempt"] = String(attempt)
                 request.url = currentURL
                 request.httpBody = try! JSONSerialization.data(withJSONObject: req, options: [])
+                gotEmptyResponse = false
                 let datatask = session.dataTask(with: request) { (data, response, error) in
                     if let error = error {
                         print("error 1 \(error.localizedDescription)")
@@ -216,6 +218,7 @@ class StoreClient {
                     if let data = data {
                         if data.isEmpty {
                             print("Received empty data, will try fast/ endpoint")
+                            gotEmptyResponse = true
                             if !triedFast {
                                 var urlString = currentURL.absoluteString
                                 if urlString.hasSuffix("/") {
@@ -258,6 +261,7 @@ class StoreClient {
                             }
                         } catch {
                             print("Error: \(error)")
+                            gotEmptyResponse = true
                             if !triedFast {
                                 var urlString = currentURL.absoluteString
                                 if urlString.hasSuffix("/") {
@@ -279,8 +283,10 @@ class StoreClient {
                     break
                 }
                 if requestCode {
-                    ret = false
-                    break
+                    if !gotEmptyResponse {
+                        ret = false
+                        break
+                    }
                 }
             }
             return ret
