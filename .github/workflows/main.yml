@@ -10,6 +10,11 @@ jobs:
     runs-on: macos-15
     steps:
      - uses: actions/checkout@v3
+     - name: List Xcode versions
+       run: |
+         ls -d /Applications/Xcode*.app
+         xcodebuild -version
+         swift --version
      - name: Compile
        run: make
      
