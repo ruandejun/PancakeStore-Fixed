@@ -148,6 +148,9 @@ class StoreClient {
                     if !endpoint.hasSuffix("/") {
                         endpoint += "/"
                     }
+                    if endpoint.contains("/v1/native/") && !endpoint.contains("/fast/") {
+                        endpoint += "fast/"
+                    }
                     print("bag: \(endpoint)")
                     return endpoint
                 }
